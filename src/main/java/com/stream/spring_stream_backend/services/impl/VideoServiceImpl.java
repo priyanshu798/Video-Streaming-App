@@ -4,10 +4,15 @@ import com.stream.spring_stream_backend.entiities.Video;
 import com.stream.spring_stream_backend.repositories.VideoRepository;
 import com.stream.spring_stream_backend.services.VideoService;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -30,7 +35,8 @@ public class VideoServiceImpl implements VideoService {
 
     @Override
     public Video get(String id) {
-        return null;
+        Video video = videoRepository.findById(id).orElseThrow(() -> new RuntimeException("Video not found"));
+        return video;
     }
 
     @PostConstruct
@@ -86,6 +92,8 @@ public class VideoServiceImpl implements VideoService {
 
     @Override
     public List<Video> getAll() {
-        return null;
+        return videoRepository.findAll();
     }
+
+
 }
