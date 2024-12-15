@@ -4,8 +4,9 @@ import com.stream.spring_stream_backend.AppConstants;
 import com.stream.spring_stream_backend.entiities.Video;
 import com.stream.spring_stream_backend.payload.CustomMessage;
 import com.stream.spring_stream_backend.services.VideoService;
-import jakarta.annotation.Resource;
+import org.springframework.core.io.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
@@ -25,7 +26,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/videos")
-@CrossOrigin("*")
+@CrossOrigin(origins = "http://localhost:5173")
 public class VideoController {
 
     @Autowired
@@ -58,6 +59,8 @@ public class VideoController {
 
 
     }
+
+
     @GetMapping
     public List<Video> getAll() {
 
@@ -70,7 +73,7 @@ public class VideoController {
         String contentType = video.getContentType();
         String path = video.getPath();
 
-        Resource resource = (Resource) new FileSystemResource("path");
+        Resource resource = new FileSystemResource(path);
 
         if (contentType == null) {
             contentType = "application/octet-stream";
@@ -88,7 +91,7 @@ public class VideoController {
         System.out.println(range);
         Video video = videoService.get(videoId);
         Path path = Paths.get(video.getPath());
-        Resource resource = (Resource) new FileSystemResource(path);
+        Resource resource = new FileSystemResource(path);
         String contentType = video.getContentType();
 
         if (contentType == null) {
@@ -137,7 +140,7 @@ public class VideoController {
             headers.add("Expires", "0");
             headers.add("X-Content-Type-Options", "nosniff");
             headers.setContentLength(contentLength);
-            Resource inputResource = (Resource) new InputStreamResource(inputStream);
+            Resource inputResource = new InputStreamResource(inputStream);
 
 
             return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
@@ -152,6 +155,50 @@ public class VideoController {
 
 
 
+    }
+
+    //server hls playlist
+    //master.m2u8 file
+
+    @Value("${file.videos.hsl}")
+    private String HLS_DIR;
+
+    @GetMapping("/{videoId}/master.m3eu8")
+    public ResponseEntity<Resource> serverMasterFile(
+            @PathVariable String videoId) {
+        //creating path
+        Path path = Paths.get(HLS_DIR, videoId, "master.m3u8");
+        System.out.println(path);
+        if (!Files.exists(path)) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        Resource resource = new FileSystemResource(path);
+
+        return ResponseEntity
+                .ok()
+                .header(
+                        HttpHeaders.CONTENT_TYPE, "application/vid.apple.mpegurl"
+                ).body(resource);
+    }
+
+    //serve the segments
+
+    @GetMapping("/{videoId}/{segment}.ts")
+    public ResponseEntity<Resource> serveSegments(
+        @PathVariable String videoId,
+        @PathVariable String segment
+    ) {
+        //creating path for segments
+        Path path = Paths.get(HLS_DIR, videoId, segment + ".ts");
+        if (!Files.exists(path)) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        Resource resource = new FileSystemResource(path);
+        return ResponseEntity
+                .ok()
+                .header(
+                        HttpHeaders.CONTENT_TYPE, "video/mp2t")
+                .body(resource);
     }
 
 }
